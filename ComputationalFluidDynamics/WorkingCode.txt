@@ -1,0 +1,264 @@
+﻿clc
+clear
+
+% Globals
+global BOUNDARY
+global FLOW
+global SOLID
+
+BOUNDARY = 0;
+FLOW = 1;
+SOLID = 2;
+
+% The bed
+length = 5;
+height = 5;
+nodes_per_unit = 20;
+Lx = (length*nodes_per_unit)+1;
+Ly = (height*nodes_per_unit)+1;
+max_t = input('Iterations = ');
+
+% Parameters
+u0 = 1;
+rho0 = 100;
+dx = 1 / nodes_per_unit;
+dy = 1 / nodes_per_unit;
+% dt = 1;  Zhou
+dt = 0.01;
+e = dx/dt;
+% tau = 0.5*(0.066*dt/(dx^2)); zhou too small
+tau = 0.8; 
+nu = e^2*dx*(2*tau-1)/6;
+Xs = 1; 
+Ys = 1; 
+Xe = Lx; 
+Ye = Ly;
+Re = u0*height/nu;
+
+% Weightings
+w(9) = 4/9;
+w(1:4) = 1/9;
+w(5:8) = 1/36;
+ex = [1 0 -1 0 1 -1 -1 1 0]*e;
+ey = [0 1 0 -1 1 1 -1 -1 0]*e;
+opp = [3,4,1,2,7,8,5,6,9];  % Opposite
+
+% Initalising the flow and setting the boundaries
+material = zeros(Lx,Ly);
+for y = 1:Ly
+    for x = 1:Lx
+        material(x,y) = FLOW;
+    end
+end
+
+for y = 2 * nodes_per_unit : 3 * nodes_per_unit
+    for x = 2 * nodes_per_unit : 4 * nodes_per_unit
+        material(x,y) = SOLID;
+    end
+end
+
+% Initialising
+f = zeros(9,Lx,Ly);
+rho = zeros(Lx,Ly);
+u = zeros(Lx,Ly);
+v = zeros(Lx,Ly);
+
+rho(:,:) = rho0;
+for y = 1:Ly
+    for x = 1:Lx
+        if (material(x,y) == BOUNDARY || material(x,y) == FLOW)
+            u(x,y) = 0.;
+            v(x,y) = -u0;
+        end
+    end
+end
+
+iteration = 0;
+time = 0;
+
+% Main Loop
+while iteration < max_t
+    iteration = iteration+1;
+    time = iteration*dt;
+    % Compute Feq
+    for y = 1:Ly
+        for x = 1:Lx
+            for a = 1:9
+                t1(x,y) = (u(x,y)*u(x,y)+v(x,y)*v(x,y))/(e*e);
+                t2(a,x,y) = (u(x,y)*ex(a)+v(x,y)*ey(a))/(e*e);
+                feq(a,x,y) = rho(x,y)*w(a)*(1.0+3.0*t2(a,x,y)...
+                    +4.5*t2(a,x,y)*t2(a,x,y)-1.5*t1(x,y));
+            end
+        end
+    end
+    
+    % Collide Stream
+    for y = Ys:Ye
+        yp = y+1;
+        yn = y-1;
+        for x = Xs:Xe
+            xp = x+1;
+            xn = x-1;
+            if (material(x,y) == BOUNDARY || material(x,y) == FLOW)
+                if xp <= Xe && (material(xp,y) == BOUNDARY || material(xp,y) == FLOW)
+                    ftemp(1,xp,y) = f(1,x,y)-(f(1,x,y)-feq(1,x,y))/tau;
+                end
+                if yp <= Ye && (material(x,yp) == BOUNDARY || material(x,yp) == FLOW)
+                    ftemp(2,x,yp) = f(2,x,y)-(f(2,x,y)-feq(2,x,y))/tau;
+                end
+                if xn >= Xs && (material(xn,y) == BOUNDARY || material(xn,y) == FLOW)
+                    ftemp(3,xn,y) = f(3,x,y)-(f(3,x,y)-feq(3,x,y))/tau;
+                end
+                if yn >= Ys && (material(x,yn) == BOUNDARY || material(x,yn) == FLOW)
+                    ftemp(4,x,yn) = f(4,x,y)-(f(4,x,y)-feq(4,x,y))/tau;
+                end
+                if xp <= Xe && yp <= Ye && (material(xp,yp) == BOUNDARY || material(xp,yp) == FLOW)
+                    ftemp(5,xp,yp) = f(5,x,y)-(f(5,x,y)-feq(5,x,y))/tau;
+                end
+                if xn >= Xs && yp <= Ye && (material(xn,yp) == BOUNDARY || material(xn,yp) == FLOW)
+                    ftemp(6,xn,yp) = f(6,x,y)-(f(6,x,y)-feq(6,x,y))/tau;
+                end
+                if xn >= Xs && yn >= Ys && (material(xn,yn) == BOUNDARY || material(xn,yn) == FLOW)
+                    ftemp(7,xn,yn) = f(7,x,y)-(f(7,x,y)-feq(7,x,y))/tau;
+                end
+                if xp <= Xe && yn >= Ys && (material(xp,yn) == BOUNDARY || material(xp,yn) == FLOW)
+                    ftemp(8,xp,yn) = f(8,x,y)-(f(8,x,y)-feq(8,x,y))/tau;
+                end
+                ftemp(9,x,y) = f(9,x,y)-(f(9,x,y)-feq(9,x,y))/tau;
+            else
+                ftemp(:,x,y) = 0;
+            end
+        end
+    end
+    
+    % Bounceback
+    for y = 1:Ly
+      
+        ftemp(3,Lx,y) = ftemp(1,Lx,y);
+        ftemp(7,Lx,y) = ftemp(5,Lx,y);
+        ftemp(6,Lx,y) = ftemp(8,Lx,y);
+        
+    end
+  
+    for y = 1:Ly
+        ftemp(1,1,y) = ftemp(3,1,y);
+        ftemp(5,1,y) = ftemp(7,1,y);
+        ftemp(8,1,y) = ftemp(6,1,y);
+        
+    end
+    % Bounce along the south boundary
+    for x = 1:Lx
+          
+            ftemp(:,x,Ly) = feq(:,x,Ly);
+            
+          
+            ftemp(:,x,1) = ftemp(:,x,2);
+            
+        end
+    
+
+    
+    
+    % Bounceback
+    for y = Ys+1:Ye-1
+        yp = y+1;
+        yn = y-1;
+        for x = Xs+1:Xe-1
+            xp = x+1;
+            xn = x-1;
+            if material(x,y) == FLOW
+                if material(xp,y) == SOLID
+                    ftemp(3,x,y) = ftemp(1,x,y);
+                end
+                if material(x,yp) == SOLID
+                    ftemp(4,x,y) = ftemp(2,x,y);
+                end
+                if material(xn,y) == SOLID
+                    ftemp(1,x,y) = ftemp(3,x,y);
+                end
+                if material(x,yn) == SOLID
+                    ftemp(2,x,y) = ftemp(4,x,y);
+                end
+                if material(xp,yp) == SOLID
+                    ftemp(6,x,y) = ftemp(5,x,y);
+                end
+                if material(xn,yp) == SOLID
+                    ftemp(8,x,y) = ftemp(6,x,y);
+                end
+                if material(xn,yn) == SOLID
+                    ftemp(5,x,y) = ftemp(7,x,y);
+                end
+                if material(xp,yn) == SOLID
+                    ftemp(6,x,y) = ftemp(8,x,y);
+                end
+            end
+        end
+    end
+     
+
+f = ftemp;
+    
+    % Calculating the components
+    for y = Ys:Ye
+        for x = Xs:Xe
+            if material(x,y) == FLOW
+                sum_u = 0;
+                sum_v = 0;
+                sum_rho = 0;
+                for a = 1:9
+                    sum_rho = sum_rho + f(a,x,y);
+                    sum_u = sum_u + ex(a)*f(a,x,y);
+                    sum_v = sum_v + ey(a)*f(a,x,y);
+                end
+                rho(x,y) = sum_rho;
+                u(x,y) = sum_u/rho(x,y);
+                v(x,y) = sum_v/rho(x,y);
+            elseif material(x,y) == SOLID
+                u(x,y) = 0;
+                v(x,y) = 0;
+            end
+        end
+        
+    end
+    
+    for x =1: Lx
+        % Inflow
+        rho(x,Ly) = rho(x,Ly-1);
+        u(x,Ly) = 0;
+        v(x,Ly) = -u0;
+        
+        % Outflow
+        rho(x,1) = rho(x,2);
+        u(x,1) = u(x,2);
+        v(x,1) = v(x,2);
+    end
+    
+    u(1,:)=0;
+    v(1,:)=0;
+    u(Lx,:)=0;
+    v(Lx,:)=0; 
+    
+%     write_file(Lx,Ly,dx,dy,dt,u,v,rho,tau, iteration, length, height, rho0, max_t, nu, Re);
+
+    if mod(iteration,20)
+    % Plot
+    nx = 1;
+    ny = 10;
+    xr = (0:1:Lx-1)*dx;
+    yr = (0:1:Ly-1)*dy;
+    [xc,yc] = ndgrid(xr,yr);
+    quiver(xc(1:nx:Lx, 1:ny:Ly), yc(1:nx:Lx, 1:ny:Ly), u(1:nx:Lx, 1:ny:Ly), v(1:nx:Lx, 1:ny:Ly),1);
+    axis([-1 6 -1 6]);
+    drawnow  
+%     pause(2);
+    end
+    
+    if iteration == max_t
+        count = input('Continue computations (y/n)? ', 's');
+        if count == 'y'
+            AddIterations = input('How many more iterations? ');
+            max_t = max_t+AddIterations;
+        end
+    end
+end
+

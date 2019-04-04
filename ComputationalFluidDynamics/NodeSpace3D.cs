@@ -4,8 +4,8 @@
     {
         protected int[,,] NodeIndices;
 
-        protected NodeSpace3D(LatticeVectorCollection latticeVectors)
-            : base(latticeVectors)
+        protected NodeSpace3D(LatticeVectorCollection latticeVectors, int resolution = 1)
+            : base(latticeVectors, resolution)
         {
         }
     }

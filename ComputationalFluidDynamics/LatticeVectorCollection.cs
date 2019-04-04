@@ -7,9 +7,9 @@ namespace ComputationalFluidDynamics
     {
         protected int[] VectorIndices;
 
-        public LatticeVectorCollection(int[,] vectors, double scalar)
+        public LatticeVectorCollection(int[,] vectors, double scalar, double[] weightings)
         {
-            InitialiseLatticeVectors(vectors, scalar);
+            InitialiseLatticeVectors(vectors, scalar, weightings);
         }
 
         public new LatticeVector this[int i] => Items[VectorIndices[i]];
@@ -27,7 +27,14 @@ namespace ComputationalFluidDynamics
                                             x.Dz == -latticeVector.Dz);
         }
 
-        private void InitialiseLatticeVectors(int[,] vectors, double scalar)
+        public int GetOppositeIndex(LatticeVector latticeVector)
+        {
+            var vector = GetOpposite(latticeVector);
+
+            return Items.IndexOf(vector);
+        }
+
+        private void InitialiseLatticeVectors(int[,] vectors, double scalar, double[] weightings)
         {
             VectorIndices = new int[vectors.GetLength(1)];
 
@@ -36,7 +43,7 @@ namespace ComputationalFluidDynamics
                 case 2:
                     for (var i = 0; i < vectors.GetLength(1); i++)
                     {
-                        Add(new LatticeVectorXY(vectors[0, i], vectors[1, i], scalar));
+                        Add(new LatticeVectorXY(vectors[0, i], vectors[1, i], scalar, weightings[i]));
                         VectorIndices[i] = Items.Count;
                     }
 
@@ -45,7 +52,7 @@ namespace ComputationalFluidDynamics
                 case 3:
                     for (var i = 0; i < vectors.GetLength(1); i++)
                     {
-                        Add(new LatticeVectorXYZ(vectors[0, i], vectors[1, i], vectors[2, i], scalar));
+                        Add(new LatticeVectorXYZ(vectors[0, i], vectors[1, i], vectors[2, i], scalar, weightings[i]));
                         VectorIndices[i] = Items.Count;
                     }
 

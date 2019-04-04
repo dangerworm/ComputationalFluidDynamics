@@ -7,20 +7,26 @@
         public int Dz;
 
         public double Scalar;
+        public double Weighting;
 
         public abstract bool HasValues { get; }
 
-        protected LatticeVector(int dx, int dy, double scalar)
-        : this(dx, dy, 0, scalar)
+        public double X => Dx * Scalar;
+        public double Y => Dy * Scalar;
+        public double Z => Dz * Scalar;
+
+        protected LatticeVector(int dx, int dy, double scalar, double weighting)
+        : this(dx, dy, 0, scalar, weighting)
         {
         }
 
-        protected LatticeVector(int dx, int dy, int dz, double scalar)
+        protected LatticeVector(int dx, int dy, int dz, double scalar, double weighting)
         {
             Dx = dx;
             Dy = dy;
             Dz = dz;
             Scalar = scalar;
+            Weighting = weighting;
         }
     }
 }

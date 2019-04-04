@@ -4,8 +4,8 @@ namespace ComputationalFluidDynamics
 {
     public class LatticeVectorXYZ : LatticeVector
     {
-        public LatticeVectorXYZ(int dx, int dy, int dz, double scalar)
-        : base(dx, dy, dz, scalar)
+        public LatticeVectorXYZ(int dx, int dy, int dz, double scalar, double weighting)
+        : base(dx, dy, dz, scalar, weighting)
         {
         }
 

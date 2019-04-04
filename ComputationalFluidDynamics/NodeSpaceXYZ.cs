@@ -5,8 +5,8 @@ namespace ComputationalFluidDynamics
 {
     public class NodeSpaceXYZ : NodeSpace3D
     {
-        public NodeSpaceXYZ(LatticeVectorCollection latticeVectors)
-        : base(latticeVectors)
+        public NodeSpaceXYZ(LatticeVectorCollection latticeVectors, int resolution = 1)
+        : base(latticeVectors, resolution)
         {
             Dimensionality = 3;
 
@@ -15,8 +15,8 @@ namespace ComputationalFluidDynamics
             HasZDimension = true;
         }
 
-        public NodeSpaceXYZ(LatticeVectorCollection latticeVectors, IEnumerable<Node> nodes)
-            : this(latticeVectors)
+        public NodeSpaceXYZ(LatticeVectorCollection latticeVectors, IEnumerable<Node> nodes, int resolution)
+            : this(latticeVectors, resolution)
         {
             Setup(nodes);
         }

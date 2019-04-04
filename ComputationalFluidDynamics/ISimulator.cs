@@ -4,7 +4,8 @@
     {
         NodeSpace NodeSpace { get; set; }
 
-        int CurrentIteration { get; set; }
         int MaxIterations { get; set; }
+        int CurrentIteration { get; set; }
+        double SimulatorTime { get; }
     }
 }

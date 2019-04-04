@@ -40,7 +40,7 @@ namespace ComputationalFluidDynamics.Factories
                 var nodes = GenerateNodes(defaultNodeType, nodesX, nodesY, nodesZ);
                 var latticeVectors = LatticeVectorCollectionFactory.Create(LatticeArrangement.D3Q19, 1);
 
-                return new NodeSpaceXYZ(latticeVectors, nodes);
+                return new NodeSpaceXYZ(latticeVectors, nodes, resolution);
             }
 
             if (nodesX > 0 && nodesY > 0)
@@ -48,7 +48,7 @@ namespace ComputationalFluidDynamics.Factories
                 var nodes = GenerateNodes(defaultNodeType, nodesX, nodesY);
                 var latticeVectors = LatticeVectorCollectionFactory.Create(LatticeArrangement.D2Q9, 1);
 
-                return new NodeSpaceXY(latticeVectors, nodes);
+                return new NodeSpaceXY(latticeVectors, nodes, resolution);
             }
 
             return null;

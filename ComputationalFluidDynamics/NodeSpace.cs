@@ -7,8 +7,10 @@ namespace ComputationalFluidDynamics
     {
         public LatticeVectorCollection LatticeVectors { get; set; }
 
-        public int Dimensionality { get; protected set; }
         public bool IsInitialised { get; protected set; }
+
+        public int Dimensionality { get; protected set; }
+        public int Resolution { get; protected set; }
 
         public int MaxX { get; set; }
         public int MaxY { get; set; }
@@ -18,13 +20,14 @@ namespace ComputationalFluidDynamics
         protected bool HasYDimension;
         protected bool HasZDimension;
 
-        protected NodeSpace(LatticeVectorCollection latticeVectors)
+        protected NodeSpace(LatticeVectorCollection latticeVectors, int resolution)
         {
             IsInitialised = false;
 
             LatticeVectors = latticeVectors;
 
             Dimensionality = 0;
+            Resolution = resolution;
 
             HasXDimension = false;
             HasYDimension = false;
