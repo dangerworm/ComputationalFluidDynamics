@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ComputationalFluidDynamics
+﻿namespace ComputationalFluidDynamics.LatticeVectors
 {
     public class LatticeVectorXY : LatticeVector
     {

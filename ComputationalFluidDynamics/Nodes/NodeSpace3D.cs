@@ -1,4 +1,6 @@
-﻿namespace ComputationalFluidDynamics
+﻿using ComputationalFluidDynamics.LatticeVectors;
+
+namespace ComputationalFluidDynamics.Nodes
 {
     public abstract class NodeSpace3D : NodeSpace
     {

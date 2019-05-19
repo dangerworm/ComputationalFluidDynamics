@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using ComputationalFluidDynamics.Nodes;
 
 namespace ComputationalFluidDynamics.Factories
 {
@@ -19,17 +20,9 @@ namespace ComputationalFluidDynamics.Factories
 
         private static NodeSpace Create(double minX, double maxX, double minY, double maxY, double minZ, double maxZ, int resolution, NodeType defaultNodeType)
         {
-            var x = maxX - minX >= 0
-                ? maxX - minX
-                : minX - maxX;
-
-            var y = maxY - minY >= 0
-                ? maxY - minY
-                : minY - maxY;
-
-            var z = maxZ - minZ >= 0
-                ? maxZ - minZ
-                : minZ - maxZ;
+            var x = Math.Abs(maxX - minX);
+            var y = Math.Abs(maxY - minY);
+            var z = Math.Abs(maxZ - minZ);
 
             var nodesX = (int)Math.Floor(x * resolution);
             var nodesY = (int)Math.Floor(y * resolution);

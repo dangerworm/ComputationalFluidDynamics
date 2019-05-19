@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using ComputationalFluidDynamics.LatticeVectors;
 
-namespace ComputationalFluidDynamics
+namespace ComputationalFluidDynamics.Nodes
 {
     public class NodeSpaceXYZ : NodeSpace3D
     {

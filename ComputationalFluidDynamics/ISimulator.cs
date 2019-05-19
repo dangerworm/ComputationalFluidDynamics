@@ -1,11 +1,15 @@
-﻿namespace ComputationalFluidDynamics
+﻿using ComputationalFluidDynamics.Nodes;
+
+namespace ComputationalFluidDynamics
 {
     public interface ISimulator
     {
-        NodeSpace NodeSpace { get; set; }
+        ModelParameters ModelParameters { get; }
+        NodeSpace NodeSpace { get; }
 
-        int MaxIterations { get; set; }
         int CurrentIteration { get; set; }
+        int MaxIterations { get; }
+        int OutputDelay { get; }
         double SimulatorTime { get; }
     }
 }

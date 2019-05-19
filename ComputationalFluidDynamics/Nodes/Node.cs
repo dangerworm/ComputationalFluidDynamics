@@ -1,6 +1,6 @@
 ﻿using ComputationalFluidDynamics.Enums;
 
-namespace ComputationalFluidDynamics
+namespace ComputationalFluidDynamics.Nodes
 {
     public class Node
     {

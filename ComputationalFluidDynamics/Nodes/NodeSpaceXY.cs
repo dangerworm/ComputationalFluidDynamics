@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using ComputationalFluidDynamics.LatticeVectors;
 
-namespace ComputationalFluidDynamics
+namespace ComputationalFluidDynamics.Nodes
 {
-    public class NodeSpaceXY : NodeSpace2D
+    public class NodeSpaceXY : NodeSpace2D, IEnumerable
     {
         public NodeSpaceXY(LatticeVectorCollection latticeVectors, int resolution = 1)
         : base(latticeVectors, resolution)
@@ -50,6 +53,16 @@ namespace ComputationalFluidDynamics
             }
 
             IsInitialised = true;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public new NodeEnumerator GetEnumerator()
+        {
+            return new NodeEnumerator(Items.ToArray(), NodeIndices, MaxY);
         }
     }
 }

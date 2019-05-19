@@ -1,10 +1,13 @@
-﻿namespace ComputationalFluidDynamics
+﻿namespace ComputationalFluidDynamics.Factories
 {
-    public static class DataHelper
+    public static class ArrayFactory
     {
-        public static T[,] GetNew2DArray<T>(int x, int y, T initialValue)
+        public static T[,] Create<T>(int x, int y, T initialValue = default(T))
         {
             var array = new T[x, y];
+
+            if (initialValue.Equals(default(T)))
+                return array;
 
             for (var i = 0; i < x * y; i++)
             {
@@ -14,9 +17,12 @@
             return array;
         }
 
-        public static T[,,] GetNew3DArray<T>(int a, int x, int y, T initialValue)
+        public static T[,,] Create<T>(int a, int x, int y, T initialValue = default(T))
         {
             var array = new T[a, x, y];
+
+            if (initialValue.Equals(default(T)))
+                return array;
 
             for (var i = 0; i < x * y; i++)
             {
@@ -29,9 +35,12 @@
             return array;
         }
 
-        public static T[,,,] GetNew4DArray<T>(int a, int b, int c, int d, T initialValue)
+        public static T[,,,] Create<T>(int a, int b, int c, int d, T initialValue = default(T))
         {
             var array = new T[a, b, c, d];
+
+            if (initialValue.Equals(default(T)))
+                return array;
 
             for (var i = 0; i < a; i++)
             {

@@ -1,4 +1,4 @@
-﻿namespace ComputationalFluidDynamics
+﻿namespace ComputationalFluidDynamics.LatticeVectors
 {
     public abstract class LatticeVector
     {

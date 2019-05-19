@@ -43,25 +43,28 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DataHelper.cs" />
+    <Compile Include="Factories\ArrayFactory.cs" />
     <Compile Include="Enums\LatticeArrangement.cs" />
     <Compile Include="Factories\LatticeVectorCollectionFactory.cs" />
     <Compile Include="ISimulator.cs" />
-    <Compile Include="LatticeVector.cs" />
-    <Compile Include="LatticeVectorCollection.cs" />
-    <Compile Include="LatticeVectorXYZ.cs" />
-    <Compile Include="LatticeVectorXY.cs" />
-    <Compile Include="Node.cs" />
-    <Compile Include="NodeSpace.cs" />
-    <Compile Include="NodeSpace3D.cs" />
-    <Compile Include="NodeSpace2D.cs" />
+    <Compile Include="LatticeVectors\LatticeVector.cs" />
+    <Compile Include="LatticeVectors\LatticeVectorCollection.cs" />
+    <Compile Include="LatticeVectors\LatticeVectorXYZ.cs" />
+    <Compile Include="LatticeVectors\LatticeVectorXY.cs" />
+    <Compile Include="ModelParameters.cs" />
+    <Compile Include="Nodes\Node.cs" />
+    <Compile Include="Nodes\NodeEnumerator.cs" />
+    <Compile Include="Nodes\NodeSpace.cs" />
+    <Compile Include="Nodes\NodeSpace3D.cs" />
+    <Compile Include="Nodes\NodeSpace2D.cs" />
     <Compile Include="Factories\NodeSpaceFactory.cs" />
-    <Compile Include="NodeSpaceXYZ.cs" />
-    <Compile Include="NodeSpaceXY.cs" />
+    <Compile Include="Nodes\NodeSpaceXYZ.cs" />
+    <Compile Include="Nodes\NodeSpaceXY.cs" />
     <Compile Include="Enums\NodeType.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="LatticeBoltzmannBhatnagarGrossKrookSimulator.cs" />
+    <Compile Include="LatticeBhatnagarGrossKrookSimulator.cs" />
+    <Compile Include="Shapes\Shape.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

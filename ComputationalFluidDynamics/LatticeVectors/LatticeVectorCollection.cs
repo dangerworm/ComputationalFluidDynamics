@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace ComputationalFluidDynamics
+namespace ComputationalFluidDynamics.LatticeVectors
 {
     public class LatticeVectorCollection : Collection<LatticeVector>
     {
@@ -11,8 +11,6 @@ namespace ComputationalFluidDynamics
         {
             InitialiseLatticeVectors(vectors, scalar, weightings);
         }
-
-        public new LatticeVector this[int i] => Items[VectorIndices[i]];
 
         public LatticeVector GetOpposite(LatticeVector latticeVector)
         {
