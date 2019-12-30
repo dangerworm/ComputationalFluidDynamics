@@ -1,5 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
+using ComputationalFluidDynamics.Enums;
 using ComputationalFluidDynamics.LatticeVectors;
 
 namespace ComputationalFluidDynamics.Nodes
@@ -45,6 +49,11 @@ namespace ComputationalFluidDynamics.Nodes
             HasZDimension = false;
         }
 
+        public virtual IEnumerable<Node> NodeTypes(NodeType nodeTypes)
+        {
+            return this.Where(n => (nodeTypes & n.NodeType) == n.NodeType);
+        }
+
         protected void Setup(IEnumerable<Node> nodes)
         {
             foreach (var node in nodes)
@@ -79,6 +88,25 @@ namespace ComputationalFluidDynamics.Nodes
             {
                 MaxZ = node.Z.Value + 1;
             }
+        }
+
+        public void ComputeFEquilibrium(double latticeVelocity)
+        {
+            var eSquared = Math.Pow(latticeVelocity, 2);
+
+            Parallel.ForEach(this, n =>
+            {
+                var preCalc1 = 1.5 * (Math.Pow(n.Velocity[0], 2) + Math.Pow(n.Velocity[1], 2)) / eSquared;
+
+                for (var a = 0; a < LatticeVectors.Count; a++)
+                {
+                    var preCalc2 = (n.Velocity[0] * LatticeVectors[a].X + 
+                                    n.Velocity[1] * LatticeVectors[a].Y) / eSquared;
+
+                    n.FEquilibrium[a] = n.Rho * LatticeVectors[a].Weighting *
+                                             (1.0 + 3.0 * preCalc2 + 4.5 * Math.Pow(preCalc2, 2) - preCalc1);
+                }
+            });
         }
     }
 }

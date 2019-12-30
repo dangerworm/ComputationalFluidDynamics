@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using ComputationalFluidDynamics.Enums;
 using ComputationalFluidDynamics.LatticeVectors;
 
 namespace ComputationalFluidDynamics.Nodes

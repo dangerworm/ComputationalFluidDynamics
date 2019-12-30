@@ -3,13 +3,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using ComputationalFluidDynamics.Factories;
 using ComputationalFluidDynamics.Nodes;
 
 namespace ComputationalFluidDynamics
 {
     public class LatticeBhatnagarGrossKrookSimulator : ISimulator
     {
+        private const NodeType FlowNodes = NodeType.Boundary | NodeType.Liquid;
+
         public ModelParameters ModelParameters { get; }
         public NodeSpace NodeSpace { get; }
         public IEnumerable<Shape> Shapes { get; }
@@ -66,18 +67,17 @@ namespace ComputationalFluidDynamics
 
         #endregion Tracking Parameters
 
+<<<<<<< Updated upstream
+=======
         #region Variables
 
         private double[,,] _fPrevious;
         private double[,,] _fEquilibrium;
-        private double[,,] _fCurrent;
-        private double[,] _rho;
-        private double[,] _rhoOld;
-        private double[,] _u;
-        private double[,] _v;
+        private double[,,] _fNew;
 
         #endregion Variables
 
+>>>>>>> Stashed changes
         public LatticeBhatnagarGrossKrookSimulator(ModelParameters modelParameters, NodeSpace nodeSpace,
             IEnumerable<Shape> shapes, int iterations, int outputDelay)
         {
@@ -94,38 +94,10 @@ namespace ComputationalFluidDynamics
 
         private void Initialise()
         {
-            // Calculated at the start of each iteration. The equilibrium function.
-            _fEquilibrium = ArrayFactory.Create(9, NodeSpace.MaxX, NodeSpace.MaxY, 0.0);
-
-            // Built up each iteration. The 'new' values.
-            _fCurrent = ArrayFactory.Create(9, NodeSpace.MaxX, NodeSpace.MaxY, 0.0);
-
-            // Copied from _fCurrent at the end of each iteration. The 'previous' values.
-            _fPrevious = ArrayFactory.Create(9, NodeSpace.MaxX, NodeSpace.MaxY, 0.0);
-
-            _rho = ArrayFactory.Create(NodeSpace.MaxX, NodeSpace.MaxY, ModelParameters.Rho0);
-            _rhoOld = ArrayFactory.Create(NodeSpace.MaxX, NodeSpace.MaxY, ModelParameters.Rho0);
-            _u = ArrayFactory.Create(NodeSpace.MaxX, NodeSpace.MaxY, 0.0);
-            _v = ArrayFactory.Create(NodeSpace.MaxX, NodeSpace.MaxY, 0.0);
-
-            var validNodeTypes = new[] { NodeType.Boundary, NodeType.Liquid };
-
-            for (var y = 0; y < NodeSpace.MaxY; y++)
-            {
-                for (var x = 0; x < NodeSpace.MaxX; x++)
-                {
-                    if (!validNodeTypes.Contains(_nodes[x, y].NodeType))
-                    {
-                        continue;
-                    }
-
-                    _u[x, y] = ModelParameters.U0;
-                    _v[x, y] = ModelParameters.V0;
-                }
-            }
+            Parallel.ForEach(NodeSpace.NodeTypes(FlowNodes), n => 
+                n.Initialise(NodeSpace.LatticeVectors.Count, ModelParameters.Rho0, ModelParameters.InitialVelocity));
 
             CurrentIteration = 0;
-
             IsInitialised = true;
         }
 
@@ -141,29 +113,19 @@ namespace ComputationalFluidDynamics
                 throw new InvalidOperationException("Error greater than 1,000. Terminating program.");
             }
 
-            ComputeFEquilibrium(); // Can be done independent of nodes
+            NodeSpace.ComputeFEquilibrium(_latticeVelocity);
 
-            Parallel.ForEach(_nodes, CollideStream);
-            Parallel.ForEach(_nodes, BounceBackFromSolids);
+            Parallel.ForEach(NodeSpace, CollideStream);
+            Parallel.ForEach(NodeSpace, BounceBackFromSolids);
 
             BounceBackEastWest();
             BounceBackNorthSouth();
 
-            CalculateComponents();
-            ClearSolidCells();
+            Parallel.ForEach(NodeSpace, node => node.CalculateComponents(NodeSpace.LatticeVectors));
+            Parallel.ForEach(NodeSpace.NodeTypes(NodeType.Solid), n => n.Velocity = new[] { 0.0 }); 
 
-            var error = 0.0;
-            for (var y = 0; y < NodeSpace.MaxY; y++)
-            {
-                for (var x = 0; x < NodeSpace.MaxX; x++)
-                {
-                    error += Math.Pow(_rho[x, y] - _rhoOld[x, y], 2);
-                }
-            }
-
-            _l2Error = Math.Sqrt(error);
-
-            Array.Copy(_rho, _rhoOld, _rho.Length);
+            _l2Error = Math.Sqrt(NodeSpace.Sum(node => node.RhoError));
+            Parallel.ForEach(NodeSpace, n => n.SetRhoPrevious());
 
             if (CurrentIteration % OutputDelay == 0)
             {
@@ -173,71 +135,40 @@ namespace ComputationalFluidDynamics
             CurrentIteration++;
         }
 
-        private void ComputeFEquilibrium()
-        {
-            var eSquared = Math.Pow(_latticeVelocity, 2);
-
-            for (var y = 0; y < NodeSpace.MaxY; y++)
-            {
-                for (var x = 0; x < NodeSpace.MaxX; x++)
-                {
-                    var preCalc1 = (_u[x, y] * _u[x, y] + _v[x, y] * _v[x, y]) / eSquared;
-
-                    for (var a = 0; a < NodeSpace.LatticeVectors.Count; a++)
-                    {
-                        var preCalc2 = (_u[x, y] * NodeSpace.LatticeVectors[a].X +
-                                        _v[x, y] * NodeSpace.LatticeVectors[a].Y) / eSquared;
-
-                        _fEquilibrium[a, x, y] = _rho[x, y] * NodeSpace.LatticeVectors[a].Weighting *
-                                                 (1.0 + 3.0 * preCalc2 + 4.5 * Math.Pow(preCalc2, 2) - 1.5 * preCalc1);
-                    }
-                }
-            }
-        }
-
         private void CollideStream(Node node)
         {
-            var validNodeTypes = new[] { NodeType.Boundary, NodeType.Liquid };
+            var x = node.X.Value;
+            var y = node.Y.Value;
 
-            var x = node.X ?? -1;
-            var y = node.Y ?? -1;
-            var a = 0;
-
-            if (!validNodeTypes.Contains(_nodes[x, y].NodeType))
+            if ((FlowNodes & node.NodeType) == 0)
             {
-                for (a = 0; a < NodeSpace.LatticeVectors.Count; a++)
-                {
-                    _fCurrent[a, x, y] = 0;
-                }
-
+                node.ResetFNew();
                 return;
             }
 
-            for (a = 0; a < NodeSpace.LatticeVectors.Count - 1; a++)
+            for (var a = 0; a < NodeSpace.LatticeVectors.Count; a++)
             {
                 var dx = NodeSpace.LatticeVectors[a].Dx;
                 var dy = NodeSpace.LatticeVectors[a].Dy;
 
-                var newValue = GetNewCollisionValue(a, x, y, dx, dy, validNodeTypes);
-                if (newValue != null)
-                {
-                    _fCurrent[a, x + dx, y + dy] = newValue.Value;
-                }
+<<<<<<< Updated upstream
+                node.FNew[a, x + dx, y + dy] = GetNewCollisionValue(a, x, y, dx, dy, FlowNodes);
+=======
+                _fNew[a, x + dx, y + dy] = GetNewCollisionValue(a, x, y, dx, dy, FlowNodes);
+>>>>>>> Stashed changes
             }
-
-            a = NodeSpace.LatticeVectors.Count - 1;
-            _fCurrent[a, x, y] = _fPrevious[a, x, y] - (_fPrevious[a, x, y] - _fEquilibrium[a, x, y]) / _relaxationTime;
         }
 
-        private double? GetNewCollisionValue(int a, int x, int y, int dx, int dy, IEnumerable<NodeType> validNodeTypes)
+        private double GetNewCollisionValue(int a, int x, int y, int dx, int dy, NodeType validNodeTypes)
         {
-            if (!validNodeTypes.Contains(_nodes[x + dx, y + dy].NodeType) ||
+            if ((validNodeTypes & _nodes[x, y].NodeType) == 0 ||
+                (validNodeTypes & _nodes[x + dx, y + dy].NodeType) == 0 ||
                 (dx > 0 && x + dx > NodeSpace.MaxX) ||
                 (dy > 0 && y + dy > NodeSpace.MaxY) ||
                 (dx < 0 && x + dx < 0) ||
                 (dy < 0 && y + dy < 0))
             {
-                return null;
+                return 0.0;
             }
 
             return _fPrevious[a, x, y] - (_fPrevious[a, x, y] - _fEquilibrium[a, x, y]) / _relaxationTime;
@@ -255,7 +186,7 @@ namespace ComputationalFluidDynamics
 
             for (var a = 0; a < NodeSpace.LatticeVectors.Count; a++)
             {
-                temp[a] = _fCurrent[a, x, y];
+                temp[a] = _fNew[a, x, y];
             }
 
             for (var a = 0; a < NodeSpace.LatticeVectors.Count; a++)
@@ -268,7 +199,7 @@ namespace ComputationalFluidDynamics
 
                 if (_nodes[x + dx, y + dy].NodeType == NodeType.Solid)
                 {
-                    _fCurrent[opposite, x, y] = temp[a];
+                    _fNew[opposite, x, y] = temp[a];
                 }
             }
         }
@@ -278,14 +209,14 @@ namespace ComputationalFluidDynamics
             for (var y = 0; y < NodeSpace.MaxY; y++)
             {
                 /* Bounce along East boundary */
-                _fCurrent[2, NodeSpace.MaxX - 1, y] = _fCurrent[0, NodeSpace.MaxX - 1, y];
-                _fCurrent[6, NodeSpace.MaxX - 1, y] = _fCurrent[4, NodeSpace.MaxX - 1, y];
-                _fCurrent[5, NodeSpace.MaxX - 1, y] = _fCurrent[7, NodeSpace.MaxX - 1, y];
+                _fNew[2, NodeSpace.MaxX - 1, y] = _fNew[0, NodeSpace.MaxX - 1, y];
+                _fNew[6, NodeSpace.MaxX - 1, y] = _fNew[4, NodeSpace.MaxX - 1, y];
+                _fNew[5, NodeSpace.MaxX - 1, y] = _fNew[7, NodeSpace.MaxX - 1, y];
 
                 /* Bounce along West boundary */
-                _fCurrent[0, 1, y] = _fCurrent[2, 1, y];
-                _fCurrent[4, 1, y] = _fCurrent[6, 1, y];
-                _fCurrent[7, 1, y] = _fCurrent[5, 1, y];
+                _fNew[0, 1, y] = _fNew[2, 1, y];
+                _fNew[4, 1, y] = _fNew[6, 1, y];
+                _fNew[7, 1, y] = _fNew[5, 1, y];
             }
         }
 
@@ -294,9 +225,9 @@ namespace ComputationalFluidDynamics
             /* Bounce along South boundary  */
             for (var x = 0; x < NodeSpace.MaxX; x++)
             {
-                _fCurrent[1, x, 1] = _fCurrent[3, x, 1];
-                _fCurrent[4, x, 1] = _fCurrent[6, x, 1];
-                _fCurrent[5, x, 1] = _fCurrent[7, x, 1];
+                _fNew[1, x, 1] = _fNew[3, x, 1];
+                _fNew[4, x, 1] = _fNew[6, x, 1];
+                _fNew[5, x, 1] = _fNew[7, x, 1];
             }
 
             /* Bounce along North boundary with a known velocity */
@@ -304,68 +235,12 @@ namespace ComputationalFluidDynamics
             {
                 var y = NodeSpace.MaxY - 1;
 
-                var rhoN = _fCurrent[8, x, y] + _fCurrent[0, x, y] + _fCurrent[2, x, y]
-                           + 2 * (_fCurrent[1, x, y] + _fCurrent[5, x, y] + _fCurrent[4, x, y]);
+                var rhoN = _fNew[8, x, y] + _fNew[0, x, y] + _fNew[2, x, y]
+                           + 2 * (_fNew[1, x, y] + _fNew[5, x, y] + _fNew[4, x, y]);
 
-                _fCurrent[3, x, y] = _fCurrent[1, x, y];
-                _fCurrent[7, x, y] = _fCurrent[5, x, y] + rhoN * ModelParameters.U0 / 6;
-                _fCurrent[6, x, y] = _fCurrent[4, x, y] - rhoN * ModelParameters.U0 / 6;
-            }
-        }
-
-        private void CalculateComponents()
-        {
-            for (var y = 0; y < NodeSpace.MaxY; y++)
-            {
-                for (var x = 0; x < NodeSpace.MaxX; x++)
-                {
-                    for (var a = 0; a < NodeSpace.LatticeVectors.Count; a++)
-                    {
-                        _fPrevious[a, x, y] = _fCurrent[a, x, y];
-                    }
-                }
-            }
-
-            var sumRho = ArrayFactory.Create(NodeSpace.MaxX, NodeSpace.MaxY, 0.0);
-            var sumU = ArrayFactory.Create(NodeSpace.MaxX, NodeSpace.MaxY, 0.0);
-            var sumV = ArrayFactory.Create(NodeSpace.MaxX, NodeSpace.MaxY, 0.0);
-
-            foreach (var node in _nodes)
-            {
-                var x = node.X ?? -1;
-                var y = node.Y ?? -1;
-
-                for (var a = 0; a < NodeSpace.LatticeVectors.Count; a++)
-                {
-                    var value = node.NodeType != NodeType.Liquid ? 0 : _fCurrent[a, x, y];
-
-                    sumRho[x, y] += value;
-                    sumU[x, y] += value * NodeSpace.LatticeVectors[a].Dx;
-                    sumV[x, y] += value * NodeSpace.LatticeVectors[a].Dy;
-                }
-            }
-
-            _rho = sumRho;
-
-            for (var y = 0; y < NodeSpace.MaxY; y++)
-            {
-                for (var x = 0; x < NodeSpace.MaxX; x++)
-                {
-                    _u[x, y] = sumU[x, y] / _rho[x, y];
-                    _v[x, y] = sumV[x, y] / _rho[x, y];
-                }
-            }
-        }
-
-        private void ClearSolidCells()
-        {
-            foreach (var node in _nodes.Where(n => n.NodeType == NodeType.Solid))
-            {
-                var x = node.X ?? -1;
-                var y = node.Y ?? -1;
-
-                _u[x, y] = 0;
-                _v[x, y] = 0;
+                _fNew[3, x, y] = _fNew[1, x, y];
+                _fNew[7, x, y] = _fNew[5, x, y] + rhoN * ModelParameters.U0 / 6;
+                _fNew[6, x, y] = _fNew[4, x, y] - rhoN * ModelParameters.U0 / 6;
             }
         }
 
