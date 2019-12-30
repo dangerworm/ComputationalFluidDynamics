@@ -1,7 +1,6 @@
-﻿using ComputationalFluidDynamics.Enums;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System;
+using System.Xml.Schema;
+using ComputationalFluidDynamics.Enums;
 using ComputationalFluidDynamics.Nodes;
 
 namespace ComputationalFluidDynamics.Factories
@@ -10,72 +9,60 @@ namespace ComputationalFluidDynamics.Factories
     {
         public static NodeSpaceXY Create(double minX, double maxX, double minY, double maxY, int resolution)
         {
-            return (NodeSpaceXY)Create(minX, maxX, minY, maxY, 0, 0, resolution, NodeType.None);
-        }
+            var nodesX = GetNodeCount(minX, maxX, resolution);
+            var nodesY = GetNodeCount(minY, maxY, resolution);
 
-        public static NodeSpaceXYZ Create(double minX, double maxX, double minY, double maxY, double minZ, double maxZ, int resolution)
-        {
-            return (NodeSpaceXYZ)Create(minX, maxX, minY, maxY, minZ, maxZ, resolution, NodeType.None);
-        }
+            var latticeVectors = LatticeVectorCollectionFactory.Create(LatticeArrangement.D2Q9, 1);
+            var nodeSpace = new NodeSpaceXY(latticeVectors, resolution, NodeType.None, nodesX, nodesY);
 
-        private static NodeSpace Create(double minX, double maxX, double minY, double maxY, double minZ, double maxZ, int resolution, NodeType defaultNodeType)
-        {
-            var x = Math.Abs(maxX - minX);
-            var y = Math.Abs(maxY - minY);
-            var z = Math.Abs(maxZ - minZ);
-
-            var nodesX = (int)Math.Floor(x * resolution);
-            var nodesY = (int)Math.Floor(y * resolution);
-            var nodesZ = (int)Math.Floor(z * resolution);
-
-            if (nodesX > 0 && nodesY > 0 && nodesZ > 0)
+            foreach (var node in nodeSpace)
             {
-                var nodes = GenerateNodes(defaultNodeType, nodesX, nodesY, nodesZ);
-                var latticeVectors = LatticeVectorCollectionFactory.Create(LatticeArrangement.D3Q19, 1);
-
-                return new NodeSpaceXYZ(latticeVectors, nodes, resolution);
-            }
-
-            if (nodesX > 0 && nodesY > 0)
-            {
-                var nodes = GenerateNodes(defaultNodeType, nodesX, nodesY);
-                var latticeVectors = LatticeVectorCollectionFactory.Create(LatticeArrangement.D2Q9, 1);
-
-                return new NodeSpaceXY(latticeVectors, nodes, resolution);
-            }
-
-            return null;
-        }
-
-        private static IEnumerable<Node> GenerateNodes(NodeType nodeType, int x, int y)
-        {
-            var nodes = new Collection<Node>();
-            for (var j = 0; j < y; j++)
-            {
-                for (var i = 0; i < x; i++)
+                for (var a = 0; a < latticeVectors.Count; ++a)
                 {
-                    nodes.Add(new Node(nodeType, i, j, null));
+                    var x = node.X + latticeVectors[a].Dx;
+                    var y = node.Y + latticeVectors[a].Dy;
+
+                    if (x < 0 || y < 0 || x >= nodeSpace.MaxX || y >= nodeSpace.MaxY)
+                        continue;
+
+                    node.Neighbours[a] = nodeSpace[x, y];
                 }
             }
 
-            return nodes;
+            return nodeSpace;
         }
 
-        private static IEnumerable<Node> GenerateNodes(NodeType nodeType, int x, int y, int z)
+        public static NodeSpaceXYZ Create(double minX, double maxX, double minY, double maxY, double minZ, double maxZ,
+            int resolution)
         {
-            var nodes = new Collection<Node>();
-            for (var k = 0; k < z; k++)
+            var nodesX = GetNodeCount(minX, maxX, resolution);
+            var nodesY = GetNodeCount(minY, maxY, resolution);
+            var nodesZ = GetNodeCount(minZ, maxZ, resolution);
+
+            var latticeVectors = LatticeVectorCollectionFactory.Create(LatticeArrangement.D3Q19, 1);
+            var nodeSpace = new NodeSpaceXYZ(latticeVectors, resolution, NodeType.None, nodesX, nodesY, nodesZ);
+
+            foreach (var node in nodeSpace)
             {
-                for (var j = 0; j < y; j++)
+                for (var a = 0; a < latticeVectors.Count; ++a)
                 {
-                    for (var i = 0; i < x; i++)
-                    {
-                        nodes.Add(new Node(nodeType, i, j, k));
-                    }
+                    var x = node.X + latticeVectors[a].Dx;
+                    var y = node.Y + latticeVectors[a].Dy;
+                    var z = node.Z + latticeVectors[a].Dz;
+
+                    if (x < 0 || y < 0 || z < 0 || x > nodeSpace.MaxX || y > nodeSpace.MaxY || z > nodeSpace.MaxZ)
+                        continue;
+
+                    node.Neighbours[a] = nodeSpace[x, y, z];
                 }
             }
 
-            return nodes;
+            return nodeSpace;
+        }
+
+        private static int GetNodeCount(double min, double max, int resolution)
+        {
+            return Convert.ToInt32(Math.Floor(Math.Abs(max - min) * resolution));
         }
     }
 }

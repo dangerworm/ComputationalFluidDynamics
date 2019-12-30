@@ -1,23 +1,28 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace ComputationalFluidDynamics.LatticeVectors
 {
     public class LatticeVectorCollection : Collection<LatticeVector>
     {
-        protected int[] VectorIndices;
+        private readonly int _vectorCount;
+        private Dictionary<int, LatticeVector> _opposites;
+
+        public int Dimensionality;
 
         public LatticeVectorCollection(int[,] vectors, double scalar, double[] weightings)
         {
+            _vectorCount = vectors.GetLength(1);
+
+            Dimensionality = vectors.GetLength(0);
             InitialiseLatticeVectors(vectors, scalar, weightings);
         }
 
-        public LatticeVector GetOpposite(LatticeVector latticeVector)
+        private LatticeVector CalculateOpposite(LatticeVector latticeVector)
         {
             if (!latticeVector.HasValues)
-            {
                 return null;
-            }
 
             return this.FirstOrDefault(x => x.HasValues &&
                                             x.Dx == -latticeVector.Dx &&
@@ -25,37 +30,24 @@ namespace ComputationalFluidDynamics.LatticeVectors
                                             x.Dz == -latticeVector.Dz);
         }
 
-        public int GetOppositeIndex(LatticeVector latticeVector)
+        public LatticeVector GetOpposite(LatticeVector latticeVector)
         {
-            var vector = GetOpposite(latticeVector);
-
-            return Items.IndexOf(vector);
+            return _opposites[latticeVector.Index];
         }
 
-        private void InitialiseLatticeVectors(int[,] vectors, double scalar, double[] weightings)
+        private void InitialiseLatticeVectors(int[,] vectors, double scalar, IReadOnlyList<double> weightings)
         {
-            VectorIndices = new int[vectors.GetLength(1)];
-
-            switch (vectors.GetLength(0))
+            for (var i = 0; i < _vectorCount; ++i)
             {
-                case 2:
-                    for (var i = 0; i < vectors.GetLength(1); i++)
-                    {
-                        Add(new LatticeVectorXY(vectors[0, i], vectors[1, i], scalar, weightings[i]));
-                        VectorIndices[i] = Items.Count;
-                    }
-
-                    break;
-
-                case 3:
-                    for (var i = 0; i < vectors.GetLength(1); i++)
-                    {
-                        Add(new LatticeVectorXYZ(vectors[0, i], vectors[1, i], vectors[2, i], scalar, weightings[i]));
-                        VectorIndices[i] = Items.Count;
-                    }
-
-                    break;
+                if (Dimensionality == 3)
+                    Add(new LatticeVectorXYZ(i, vectors[0, i], vectors[1, i], vectors[2, i], scalar, weightings[i]));
+                else
+                    Add(new LatticeVectorXY(i, vectors[0, i], vectors[1, i], scalar, weightings[i]));
             }
+
+            _opposites = new Dictionary<int, LatticeVector>();
+            foreach (var latticeVector in this)
+                _opposites.Add(latticeVector.Index, CalculateOpposite(latticeVector));
         }
     }
 }

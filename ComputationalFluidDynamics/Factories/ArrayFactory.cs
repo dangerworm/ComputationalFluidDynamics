@@ -9,10 +9,8 @@
             if (initialValue.Equals(default(T)))
                 return array;
 
-            for (var i = 0; i < a; i++)
-            {
+            for (var i = 0; i < a; ++i)
                 array[a] = initialValue;
-            }
 
             return array;
         }
@@ -24,10 +22,8 @@
             if (initialValue.Equals(default(T)))
                 return array;
 
-            for (var i = 0; i < x * y; i++)
-            {
+            for (var i = 0; i < x * y; ++i)
                 array[i % x, i / x] = initialValue;
-            }
 
             return array;
         }
@@ -39,13 +35,9 @@
             if (initialValue.Equals(default(T)))
                 return array;
 
-            for (var i = 0; i < x * y; i++)
-            {
-                for (var j = 0; j < a; j++)
-                {
-                    array[j, i % x, i / x] = initialValue;
-                }
-            }
+            for (var i = 0; i < x * y; ++i)
+            for (var j = 0; j < a; ++j)
+                array[j, i % x, i / x] = initialValue;
 
             return array;
         }
@@ -57,19 +49,11 @@
             if (initialValue.Equals(default(T)))
                 return array;
 
-            for (var i = 0; i < a; i++)
-            {
-                for (var j = 0; j < b; j++)
-                {
-                    for (var k = 0; k < c; k++)
-                    {
-                        for (var l = 0; l < d; l++)
-                        {
-                            array[i, j, k, l] = initialValue;
-                        }
-                    }
-                }
-            }
+            for (var i = 0; i < a; ++i)
+            for (var j = 0; j < b; ++j)
+            for (var k = 0; k < c; ++k)
+            for (var l = 0; l < d; ++l)
+                array[i, j, k, l] = initialValue;
 
             return array;
         }

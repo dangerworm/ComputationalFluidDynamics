@@ -5,31 +5,32 @@ namespace ComputationalFluidDynamics.Factories
 {
     public class LatticeVectorCollectionFactory
     {
-        public static LatticeVectorCollection Create(LatticeArrangement arrangement, double scalar)
+        private static readonly int[,] d2q9 =
         {
-            switch (arrangement)
-            {
-                case LatticeArrangement.D2Q9:
-                    return new LatticeVectorCollection(d2q9, scalar, d2q9Weights);
-                case LatticeArrangement.D3Q19:
-                    return new LatticeVectorCollection(d3q19, scalar, d3q19Weights);
-            }
+            /*
+                  5    1    4
+                  -----------
+                  | \  |  / |
+                  |  \ | /  |
+                2 ---- 8 ---- 0
+                  |  / | \  |
+                  | /  |  \ |
+                  -----------
+                  6    3    7
+            */
 
-            return null;
-        }
-
-        private static readonly int[,] d2q9 = {
-            { 1,  0, -1,  0,  1, -1, -1,  1,  0},
-            { 0,  1,  0, -1,  1,  1, -1, -1,  0}
+            {1, 0, -1, 0, 1, -1, -1, 1, 0},
+            {0, 1, 0, -1, 1, 1, -1, -1, 0}
         };
 
-        private static readonly double[] d2q9Weights = {
+        private static readonly double[] d2q9Weights =
+        {
             // Edges
             1.0 / 9.0,
             1.0 / 9.0,
             1.0 / 9.0,
             1.0 / 9.0,
-            
+
             // Corners
             1.0 / 36.0,
             1.0 / 36.0,
@@ -42,12 +43,13 @@ namespace ComputationalFluidDynamics.Factories
 
         private static readonly int[,] d3q19 =
         {
-            {  1,  0, -1,  0,  0,  0,  1, -1, -1,  1,  1, -1, -1,  1,  0,  0,  0,  0,  0},
-            {  0,  1,  0, -1,  0,  0,  1,  1, -1, -1,  0,  0,  0,  0,  1, -1, -1,  1,  0},
-            {  0,  0,  0,  0,  1, -1,  0,  0,  0,  0,  1,  1, -1, -1,  1,  1, -1, -1,  0}
+            {1, 0, -1, 0, 0, 0, 1, -1, -1, 1, 1, -1, -1, 1, 0, 0, 0, 0, 0},
+            {0, 1, 0, -1, 0, 0, 1, 1, -1, -1, 0, 0, 0, 0, 1, -1, -1, 1, 0},
+            {0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 1, 1, -1, -1, 1, 1, -1, -1, 0}
         };
 
-        private static readonly double[] d3q19Weights = {
+        private static readonly double[] d3q19Weights =
+        {
             1.0,
             1.0,
             1.0,
@@ -68,5 +70,18 @@ namespace ComputationalFluidDynamics.Factories
             1.0,
             1.0
         };
+
+        public static LatticeVectorCollection Create(LatticeArrangement arrangement, double scalar)
+        {
+            switch (arrangement)
+            {
+                case LatticeArrangement.D2Q9:
+                    return new LatticeVectorCollection(d2q9, scalar, d2q9Weights);
+                case LatticeArrangement.D3Q19:
+                    return new LatticeVectorCollection(d3q19, scalar, d3q19Weights);
+            }
+
+            return null;
+        }
     }
 }

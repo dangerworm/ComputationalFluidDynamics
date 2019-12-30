@@ -2,8 +2,8 @@
 {
     public class LatticeVectorXYZ : LatticeVector
     {
-        public LatticeVectorXYZ(int dx, int dy, int dz, double scalar, double weighting)
-        : base(dx, dy, dz, scalar, weighting)
+        public LatticeVectorXYZ(int index, int dx, int dy, int dz, double scalar, double weighting)
+            : base(index, dx, dy, dz, scalar, weighting)
         {
         }
 
